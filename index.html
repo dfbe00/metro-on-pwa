@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Metro-ON | Plataforma de Mantenimiento</title>
+
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#B91C1C" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Metro-ON" />
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Toast de feedback -->
+    <div id="toastBanner" class="toast-banner" role="status" aria-live="polite"></div>
+
+    <!-- Barra decorativa iPhone solo en desktop (en móvil se usa el área real completa) -->
+    <div class="ios-status-bar" aria-hidden="true">
+      <span id="iosClock">9:41</span>
+      <div class="ios-status-icons">
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor">
+          <rect x="0" y="7" width="2.5" height="4" rx="0.8"/>
+          <rect x="4" y="5" width="2.5" height="6" rx="0.8"/>
+          <rect x="8" y="2.5" width="2.5" height="8.5" rx="0.8"/>
+          <rect x="12" y="0" width="2.5" height="11" rx="0.8"/>
+        </svg>
+        <svg width="15" height="11" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M1.5 4.2C5.2 1.2 10.8 1.2 14.5 4.2"/>
+          <path d="M4 7C6.3 5.1 9.7 5.1 12 7"/>
+          <circle cx="8" cy="10" r="1.3" fill="currentColor" stroke="none"/>
+        </svg>
+        <svg width="23" height="11" viewBox="0 0 25 12" fill="none">
+          <rect x="0.75" y="0.75" width="20.5" height="10.5" rx="2.8" stroke="currentColor" stroke-width="1.3"/>
+          <rect x="2.5" y="2.5" width="17" height="7" rx="1.5" fill="currentColor"/>
+          <path d="M23 4V8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Franja de estado de red / sincronización pendiente -->
+    <div id="networkStrip" class="network-strip" role="status">
+      <span id="networkStripText">Modo sin conexión activo</span>
+      <button type="button" id="btnStripSyncNow" class="network-sync-mini-btn">Sincronizar</button>
+    </div>
+
+    <!-- CONTENEDOR PRINCIPAL DE PANTALLAS -->
+    <main class="screens-viewport">
+
+      <!-- ====================================================================
+           PANTALLA 0: INICIAR SESIÓN / CREAR CUENTA (SUPABASE AUTH)
+           ==================================================================== -->
+      <section id="screen-auth" class="screen auth-screen-wrap active" aria-labelledby="authHeading">
+        <div class="auth-hero">
+          <div class="metro-logo-lockup">
+            <svg class="metro-oval-svg" viewBox="0 0 120 76" fill="none" aria-hidden="true">
+              <ellipse cx="60" cy="38" rx="55" ry="33" stroke="#B91C1C" stroke-width="6.5" fill="#FFFFFF"/>
+              <polygon points="32,16 44,38 32,60 20,38" fill="#B91C1C"/>
+              <polygon points="60,16 72,38 60,60 48,38" fill="#B91C1C"/>
+              <polygon points="88,16 100,38 88,60 76,38" fill="#B91C1C"/>
+            </svg>
+            <div class="metro-wordmark">
+              <span class="metro-wordmark-main">METRO-ON</span>
+              <span class="metro-wordmark-sub">PLATAFORMA DE MANTENIMIENTO</span>
+            </div>
+          </div>
+          <h1 id="authHeading" class="auth-title">Acceso a Metro-ON</h1>
+          <p class="auth-subtitle">
+            Inicia sesión o crea tu cuenta para reportar reparaciones, gestionar inventario y sincronizar trazabilidad en Supabase.
+          </p>
+        </div>
+
+        <div class="segmented-control" role="tablist" aria-label="Modo de acceso">
+          <button type="button" id="tabBtnSignIn" class="seg-btn active" role="tab" aria-selected="true">Iniciar sesión</button>
+          <button type="button" id="tabBtnSignUp" class="seg-btn" role="tab" aria-selected="false">Crear cuenta</button>
+        </div>
+
+        <div id="authFeedbackBox" class="auth-feedback-box" role="status" aria-live="polite"></div>
+
+        <!-- Formulario 1: Iniciar sesión -->
+        <form id="formSignIn" class="auth-card">
+          <div class="form-field">
+            <label class="field-label" for="signin-email">Correo electrónico <span class="req">*</span></label>
+            <span id="signin-email-hint" class="field-hint">Formato: nombre@empresa.cl</span>
+            <input
+              type="email"
+              id="signin-email"
+              name="email"
+              class="metro-input"
+              autocomplete="username"
+              spellcheck="false"
+              enterkeyhint="next"
+              placeholder="tecnico@metro.cl"
+              aria-describedby="signin-email-hint"
+              data-error="signin-email-error"
+              required
+            />
+            <div id="signin-email-error" class="error-msg">
+              <span role="img" aria-label="Error">❌</span> Ingresa un correo válido en el formato nombre@empresa.cl.
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="field-label" for="signin-password">Contraseña <span class="req">*</span></label>
+            <div class="input-action-wrap">
+              <input
+                type="password"
+                id="signin-password"
+                name="password"
+                class="metro-input"
+                autocomplete="current-password"
+                enterkeyhint="done"
+                placeholder="Tu contraseña"
+                data-error="signin-pass-error"
+                required
+              />
+              <button type="button" class="toggle-pass-btn" data-toggle-pass="signin-password" aria-pressed="false">Mostrar</button>
+            </div>
+            <div id="signin-pass-error" class="error-msg">
+              <span role="img" aria-label="Error">❌</span> Ingresa tu contraseña para continuar.
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <button type="button" id="btnForgotPassword" class="link-btn">¿Olvidaste tu contraseña?</button>
+          </div>
+
+          <button type="submit" id="btnSignInSubmit" class="btn-metro btn-metro-red">
+            Iniciar sesión
+          </button>
+        </form>
+
+        <!-- Formulario 2: Crear cuenta -->
+        <form id="formSignUp" class="auth-card" hidden>
+          <div class="form-field">
+            <label class="field-label" for="signup-name">Nombre completo <span class="req">*</span></label>
+            <input
+              type="text"
+              id="signup-name"
+              name="full-name"
+              class="metro-input"
+              autocomplete="name"
+              enterkeyhint="next"
+              placeholder="Ej: Gabriel Peña"
+              data-error="signup-name-error"
+              required
+            />
+            <div id="signup-name-error" class="error-msg">
+              <span role="img" aria-label="Error">❌</span> Ingresa tu nombre completo.
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="field-label" for="signup-email">Correo electrónico <span class="req">*</span></label>
+            <span id="signup-email-hint" class="field-hint">Formato: nombre@empresa.cl</span>
+            <input
+              type="email"
+              id="signup-email"
+              name="email"
+              class="metro-input"
+              autocomplete="username"
+              spellcheck="false"
+              enterkeyhint="next"
+              placeholder="nombre@empresa.cl"
+              aria-describedby="signup-email-hint"
+              data-error="signup-email-error"
+              required
+            />
+            <div id="signup-email-error" class="error-msg">
+              <span role="img" aria-label="Error">❌</span> Ingresa un correo electrónico válido.
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="field-label" for="signup-role">Perfil operativo <span class="req">*</span></label>
+            <div class="select-wrapper">
+              <select id="signup-role" name="role" class="metro-select">
+                <option value="contratista" selected>👷 Técnico Contratista</option>
+                <option value="metro">🚇 Supervisor / Revisor Metro (ITC)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="field-label" for="signup-company">Empresa o unidad</label>
+            <input
+              type="text"
+              id="signup-company"
+              name="organization"
+              class="metro-input"
+              autocomplete="organization"
+              enterkeyhint="next"
+              placeholder="Ej: Schindler / Metro Subgerencia Equipos"
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="field-label" for="signup-password">Nueva contraseña <span class="req">*</span></label>
+            <ul id="signup-pass-rules" class="rules-list">
+              <li>Mínimo 6 caracteres</li>
+            </ul>
+            <div class="input-action-wrap">
+              <input
+                type="password"
+                id="signup-password"
+                name="new-password"
+                class="metro-input"
+                autocomplete="new-password"
+                minlength="6"
+                enterkeyhint="done"
+                placeholder="Crea una contraseña"
+                aria-describedby="signup-pass-rules"
+                data-error="signup-pass-error"
+                required
+              />
+              <button type="button" class="toggle-pass-btn" data-toggle-pass="signup-password" aria-pressed="false">Mostrar</button>
+            </div>
+            <div id="signup-pass-error" class="error-msg">
+              <span role="img" aria-label="Error">❌</span> La contraseña debe tener al menos 6 caracteres.
+            </div>
+          </div>
+
+          <button type="submit" id="btnSignUpSubmit" class="btn-metro btn-metro-red">
+            Crear cuenta
+          </button>
+        </form>
+      </section>
+
+      <!-- ====================================================================
+           PANTALLA 1: INICIO (6 BOTONES DEL ENTREGABLE + AVISOS + OLA ROJA)
+           ==================================================================== -->
+      <section id="screen-inicio" class="screen">
+        <div class="metro-brand-row">
+          <div class="metro-logo-lockup">
+            <svg class="metro-oval-svg" viewBox="0 0 120 76" fill="none" aria-hidden="true">
+              <ellipse cx="60" cy="38" rx="55" ry="33" stroke="#B91C1C" stroke-width="6.5" fill="#FFFFFF"/>
+              <polygon points="32,16 44,38 32,60 20,38" fill="#B91C1C"/>
+              <polygon points="60,16 72,38 60,60 48,38" fill="#B91C1C"/>
+              <polygon points="88,16 100,38 88,60 76,38" fill="#B91C1C"/>
+            </svg>
+            <div class="metro-wordmark">
+              <span class="metro-wordmark-main">METRO</span>
+              <span class="metro-wordmark-sub">DE SANTIAGO®</span>
+            </div>
+          </div>
+
+          <button type="button" class="role-pill-toggle" id="btnToggleRoleHome" title="Cambiar vista Contratista / Supervisor Metro">
+            <span id="roleBadgeText">👷 Contratista</span>
+            <span>⇄</span>
+          </button>
+        </div>
+
+        <div class="welcome-block">
+          <h1 class="welcome-title">Bienvenido</h1>
+          <div class="welcome-subtitle" id="welcomeRoleSubtitle">Contratista</div>
+        </div>
+
+        <div class="home-menu-list">
+          <!-- 1. Nuevo reporte -->
+          <button type="button" class="home-menu-btn primary-red" id="btnHomeNuevoReporte">
+            <div class="home-menu-left">
+              <span class="home-menu-icon">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                </svg>
+              </span>
+              <span>Nuevo reporte</span>
+            </div>
+            <span class="chevron-icon">›</span>
+          </button>
+
+          <!-- 2. Mis reportes -->
+          <button type="button" class="home-menu-btn" id="btnHomeMisReportes">
+            <div class="home-menu-left">
+              <span class="home-menu-icon">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#27272A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="8" y1="13" x2="16" y2="13"/>
+                  <line x1="8" y1="17" x2="14" y2="17"/>
+                </svg>
+              </span>
+              <span>Mis reportes</span>
+            </div>
+            <div class="home-menu-right">
+              <span class="count-pill" id="homeReportsCountPill">2</span>
+              <span class="chevron-icon">›</span>
+            </div>
+          </button>
+
+          <!-- 3. Historial de equipos -->
+          <button type="button" class="home-menu-btn" id="btnHomeHistorial">
+            <div class="home-menu-left">
+              <span class="home-menu-icon">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#27272A" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10"/>
+                  <line x1="12" y1="20" x2="12" y2="4"/>
+                  <line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+              </span>
+              <span>Historial de equipos</span>
+            </div>
+            <span class="chevron-icon">›</span>
+          </button>
+
+          <!-- 4. Manual técnico -->
+          <button type="button" class="home-menu-btn" id="btnHomeManual">
+            <div class="home-menu-left">
+              <span class="home-menu-icon">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#27272A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                </svg>
+              </span>
+              <span>Manual técnico</span>
+            </div>
+            <span class="chevron-icon">›</span>
+          </button>
+
+          <!-- 5. Inventario de piezas (con punto rojo si hay stock bajo) -->
+          <button type="button" class="home-menu-btn" id="btnHomeInventario">
+            <div class="home-menu-left">
+              <span class="home-menu-icon">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#27272A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                  <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+              </span>
+              <span>Inventario de piezas</span>
+            </div>
+            <div class="home-menu-right">
+              <span id="homeInventoryAlertDot" class="alert-red-dot" title="Stock bajo en bodega"></span>
+              <span class="chevron-icon">›</span>
+            </div>
+          </button>
+
+          <!-- 6. Chat con Metro -->
+          <button type="button" class="home-menu-btn" id="btnHomeChatMetro">
+            <div class="home-menu-left">
+              <span class="home-menu-icon">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#27272A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+              </span>
+              <span>Chat con Metro</span>
+            </div>
+            <span class="chevron-icon">›</span>
+          </button>
+        </div>
+
+        <button type="button" class="home-avisos-pill" id="btnHomeAvisos">
+          <span>🔔 Avisos de Metro (<span id="homeAvisosCountPill">3</span>)</span>
+          <span>›</span>
+        </button>
+
+        <svg class="home-red-wave" viewBox="0 0 220 90" fill="none" aria-hidden="true">
+          <path d="M15 90 C 75 55, 145 20, 220 12 L 220 90 Z" fill="#B91C1C"/>
+        </svg>
+      </section>
+
+      <!-- ====================================================================
+           PANTALLA 2: NUEVO REPORTE (QR / N° SERIE / EQUIPO AUTOCOMPLETADO)
+           ==================================================================== -->
+      <section id="screen-nuevo-reporte" class="screen">
+        <div class="screen-topbar">
+          <button type="button" class="back-btn" id="btnBackFromNuevoReporte" aria-label="Volver">←</button>
+          <div class="screen-topbar-title">Nuevo reporte</div>
+          <button type="button" class="topbar-mini-btn" id="btnOpenQuickManual">📖 Manual</button>
+        </div>
+
+        <div class="field-label">Identificación del equipo</div>
+        <button type="button" class="capture-id-btn" id="btnScanQrCode">
+          <span class="capture-id-left">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zm4 0h3v3h-3zm-4 4h3v3h-3zm4 4h3v-3"/>
+            </svg>
+            <span>Escanear código QR</span>
+          </span>
+          <span class="chevron-icon">›</span>
+        </button>
+
+        <div class="or-divider">o</div>
+
+        <button type="button" class="capture-id-btn" id="btnPhotoSerialNumber">
+          <span class="capture-id-left">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <span>Fotografiar N° de serie</span>
+          </span>
+          <span class="chevron-icon">›</span>
+        </button>
+
+        <!-- Banner verde de equipo individualizado -->
+        <div class="identified-asset-banner">
+          <div class="identified-asset-left">
+            <div class="green-check-badge">✓</div>
+            <div>
+              <div class="identified-asset-title">Equipo: <span id="draftAssetNameLabel">Ascensor A-03</span></div>
+              <div class="identified-asset-sub">Estación: <span id="draftStationNameLabel">Los Leones</span> · <span id="draftAssetRecurrenceLabel">3 fallas</span></div>
+            </div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="icon-action-btn" id="btnViewDraftAssetHistory" title="Ver historial de este equipo">📊</button>
+            <button type="button" class="icon-action-btn" id="btnToggleManualAssetSelect" title="Editar estación y equipo manualmente">✎</button>
+          </div>
+        </div>
+
+        <!-- Selector manual colapsable -->
+        <div id="manualAssetSelectPanel" class="manual-select-panel" hidden>
+          <div class="form-field">
+            <label class="field-label" for="inputAssetId">Equipo individualizado</label>
+            <div class="select-wrapper">
+              <select id="inputAssetId" class="metro-select"></select>
+            </div>
+          </div>
+          <div class="form-field" style="margin-bottom:0;">
+            <label class="field-label" for="inputEstacion">Estación</label>
+            <div class="select-wrapper">
+              <select id="inputEstacion" class="metro-select"></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label" for="inputTipoAveria">Tipo de avería <span class="req">*</span></label>
+          <div class="select-wrapper">
+            <select id="inputTipoAveria" class="metro-select"></select>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label" for="inputDescripcionBreve">Descripción breve</label>
+          <textarea
+            id="inputDescripcionBreve"
+            class="metro-textarea"
+            placeholder="Ej: Ascensor detenido por falla eléctrica."
+          ></textarea>
+        </div>
+
+        <div class="attachments-status-row">
+          <span class="status-chip" id="chipAudioStatus">🎙️ Audio pendiente</span>
+          <span class="status-chip done" id="chipPhotosStatus">🖼️ Fotos Antes/Después listas</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:9px;">
+          <button type="button" class="btn-metro btn-metro-red" id="btnGoToGrabarAudio">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+            <span>Grabar audio</span>
+          </button>
+
+          <button type="button" class="btn-metro btn-metro-white" id="btnOpenPhotosModal">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <span>Adjuntar fotografías</span>
+          </button>
+        </div>
+
+        <label class="offline-toggle-row" for="toggleSaveOffline">
+          <span class="offline-toggle-label">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="1" y1="1" x2="23" y2="23"/>
+              <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+              <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+              <path d="M10.71 5.05A16 16 0 0 1 22.58 9"/>
+              <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+              <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+              <line x1="12" y1="20" x2="12.01" y2="20"/>
+            </svg>
+            <span>Guardar sin conexión</span>
+          </span>
+          <span class="ios-switch">
+            <input type="checkbox" id="toggleSaveOffline" />
+            <span class="ios-switch-slider"></span>
+          </span>
+        </label>
+
+        <button type="button" class="btn-metro btn-metro-red" id="btnSiguienteGenerarIA">
+          Siguiente
+        </button>
+      </section>
+
+      <!-- ====================================================================
+           PANTALLA 3: GRABAR AUDIO
+           ==================================================================== -->
+      <section id="screen-grabar-audio" class="screen">
+        <div class="screen-topbar">
+          <button type="button" class="back-btn" id="btnBackFromAudio" aria-label="Volver">‹</button>
+          <div class="screen-topbar-title">Grabar audio</div>
+          <div class="topbar-spacer"></div>
+        </div>
+
+        <div class="audio-screen-body">
+          <div style="display:flex; flex-direction:column; align-items:center; width:100%;">
+            <button type="button" class="mic-halo-circle" id="btnBigMicCircle" title="Toca para grabar o pausar">
+              <svg width="52" height="52" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+              </svg>
+            </button>
+
+            <div class="waveform-container" id="waveformBars">
+              <span style="height:8px"></span><span style="height:14px"></span><span style="height:10px"></span>
+              <span style="height:22px"></span><span style="height:12px"></span><span style="height:28px"></span>
+              <span style="height:36px"></span><span style="height:20px"></span><span style="height:14px"></span>
+              <span style="height:18px"></span><span style="height:30px"></span><span style="height:22px"></span>
+              <span style="height:10px"></span><span style="height:14px"></span><span style="height:10px"></span>
+              <span style="height:24px"></span><span style="height:36px"></span><span style="height:26px"></span>
+              <span style="height:16px"></span><span style="height:22px"></span><span style="height:12px"></span>
+              <span style="height:8px"></span>
+            </div>
+
+            <div class="audio-timer-text" id="audioTimerDisplay">0:00 / 2:00</div>
+
+            <div class="audio-hint-box">
+              <div>Explica qué pieza falló, qué repuesto utilizaste y la prueba de funcionamiento realizada.</div>
+              <textarea
+                id="audioTranscriptTextarea"
+                class="audio-transcript-live"
+                placeholder="Aquí se transcribe tu voz en vivo (también puedes escribir o cargar el relato de prueba)..."
+              ></textarea>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px;">
+                <button
+                  type="button"
+                  id="btnLoadSampleVoice"
+                  style="border:none; background:#E4E4E7; color:#27272A; font-size:11.5px; font-weight:700; padding:6px 10px; border-radius:8px; cursor:pointer;"
+                >
+                  ⚡ Cargar relato de prueba
+                </button>
+                <span id="audioLiveStateLabel" style="font-size:11px; color:var(--metro-red); font-weight:700;">Listo para grabar</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="audio-controls-row">
+            <button type="button" class="circle-ctrl-btn" id="btnAudioCancel" title="Reiniciar grabación">✕</button>
+            <button type="button" class="circle-ctrl-btn main-red" id="btnAudioTogglePause" title="Grabar o pausar">
+              <span id="iconPauseRecord">▶</span>
+            </button>
+            <button type="button" class="circle-ctrl-btn" id="btnAudioConfirm" title="Confirmar y generar borrador IA">✓</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           PANTALLA 4: INFORME GENERADO (IA) — EDITABLE + PIEZAS + ESTADO
+           ==================================================================== -->
+      <section id="screen-informe-generado" class="screen">
+        <div class="screen-topbar">
+          <button type="button" class="back-btn" id="btnBackFromInforme" aria-label="Volver">←</button>
+          <div class="screen-topbar-title">Informe generado (IA)</div>
+          <div class="topbar-spacer"></div>
+        </div>
+
+        <div class="ai-banner-pill">
+          <span class="ai-sparkle-icon">✦</span>
+          <span id="aiBannerStatusText">Borrador generado con IA</span>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label" for="editDiagnosticoPreliminar">Diagnóstico preliminar</label>
+          <div class="editable-box-wrap">
+            <input type="text" id="editDiagnosticoPreliminar" value="Falla en sensor de puerta." />
+            <span class="edit-pencil-tag" aria-hidden="true">✎</span>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label" for="editTrabajoSugerido">Trabajo sugerido / realizado</label>
+          <div class="editable-box-wrap">
+            <textarea id="editTrabajoSugerido" rows="3">Reemplazar sensor y realizar prueba de funcionamiento.</textarea>
+            <span class="edit-pencil-tag" aria-hidden="true">✎</span>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label" for="selectPartToAdd">Piezas utilizadas <span class="req">*</span></label>
+          <div class="select-wrapper">
+            <select id="selectPartToAdd" class="metro-select"></select>
+          </div>
+          <div id="selectedPartsChips" class="parts-chips-list"></div>
+
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px;">
+            <div>
+              <div class="field-label" style="margin-bottom:2px;">Cantidad (pieza seleccionada)</div>
+              <div id="selectedPartStockHint" style="font-size:11.5px; color:var(--text-secondary);">Stock disponible en bodega: —</div>
+            </div>
+            <div class="qty-stepper">
+              <button type="button" id="btnPartQtyMinus" aria-label="Disminuir cantidad">−</button>
+              <span id="partQtyDisplay">1</span>
+              <button type="button" id="btnPartQtyPlus" aria-label="Aumentar cantidad">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <div class="field-label">Estado de revisión <span class="req">*</span></div>
+          <div class="review-status-grid">
+            <label class="review-radio-card">
+              <input type="radio" name="reviewStatus" value="En revisión" checked />
+              <span>En revisión</span>
+            </label>
+            <label class="review-radio-card">
+              <input type="radio" name="reviewStatus" value="Pendiente (faltan materiales)" />
+              <span>Pendiente (faltan materiales)</span>
+            </label>
+            <label class="review-radio-card">
+              <input type="radio" name="reviewStatus" value="Finalizado" />
+              <span>Finalizado</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="before-after-grid" style="margin-bottom:4px;">
+          <div class="ba-card">
+            <div class="ba-img-wrap">
+              <img id="imgInformeBefore" alt="Foto Antes" />
+              <button type="button" class="ba-expand-btn" id="btnPreviewExpandBefore" title="Ampliar foto Antes">⤢</button>
+            </div>
+            <div class="ba-caption">Antes</div>
+          </div>
+          <div class="ba-card">
+            <div class="ba-img-wrap">
+              <img id="imgInformeAfter" alt="Foto Después" />
+              <button type="button" class="ba-expand-btn" id="btnPreviewExpandAfter" title="Ampliar foto Después">⤢</button>
+            </div>
+            <div class="ba-caption">Después</div>
+          </div>
+        </div>
+
+        <div class="two-col-actions">
+          <button type="button" class="btn-metro btn-metro-white" id="btnCancelarInforme">Cancelar</button>
+          <button type="button" class="btn-metro btn-metro-red" id="btnGuardarCambiosInforme">Guardar cambios</button>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           PANTALLA 5: REPORTE ENVIADO / GUARDADO SIN CONEXIÓN
+           ==================================================================== -->
+      <section id="screen-reporte-enviado" class="screen">
+        <div class="sent-screen-body">
+          <div style="width:100%; margin-top:16px;">
+            <div id="sentCheckCircle" class="sent-check-circle">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <h2 id="sentTitle" class="sent-title">Reporte enviado</h2>
+            <p id="sentSubtitle" class="sent-subtitle">
+              El reporte quedó registrado en Supabase y descontó los repuestos del inventario.
+            </p>
+            <div class="sent-actions-stack">
+              <button type="button" class="btn-metro btn-metro-white" id="btnSentVerReporte">Ver reporte</button>
+              <button type="button" class="btn-metro btn-metro-red" id="btnSentIrAlInicio">Ir al inicio</button>
+            </div>
+          </div>
+
+          <button type="button" class="chat-promo-card" id="btnSentIrAlChat">
+            <div class="chat-promo-icon">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+              </svg>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:15px; font-weight:700; color:var(--text-main);">Chat con Metro</div>
+              <div style="font-size:12.5px; color:var(--text-secondary); margin-top:2px;">
+                Resuelve dudas o recibe comentarios en tiempo real.
+              </div>
+            </div>
+            <span class="chevron-icon">›</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           PANTALLA 6: MIS REPORTES (CON FILTROS + COLA OFFLINE)
+           ==================================================================== -->
+      <section id="screen-mis-reportes" class="screen">
+        <div class="screen-topbar">
+          <button type="button" class="back-btn" id="btnBackFromMisReportes" aria-label="Volver">←</button>
+          <div class="screen-topbar-title">Mis reportes</div>
+          <button type="button" class="back-btn" id="btnNewFromMisReportes" style="justify-content:flex-end; color:var(--metro-red); font-weight:800;" title="Crear reporte">＋</button>
+        </div>
+
+        <div class="filter-pills-row">
+          <button type="button" class="filter-pill active" data-rep-filter="all">Todos</button>
+          <button type="button" class="filter-pill" data-rep-filter="En revisión">En revisión</button>
+          <button type="button" class="filter-pill" data-rep-filter="Pendiente (faltan materiales)">Pendientes</button>
+          <button type="button" class="filter-pill" data-rep-filter="Finalizado">Finalizados</button>
+          <button type="button" class="filter-pill" data-rep-filter="offline">Sin sincronizar</button>
+        </div>
+
+        <div id="savedReportsContainer"></div>
+      </section>
+
+      <!-- ====================================================================
+           PANTALLA 7: DETALLE DE REPORTE (REPORTE N° 4587 + COMENTARIOS METRO)
+           ==================================================================== -->
+      <section id="screen-detalle-reporte" class="screen">
+        <div class="screen-topbar">
+          <button type="button" class="back-btn" id="btnBackFromDetalleReporte" aria-label="Volver">←</button>
+          <div class="screen-topbar-title" id="detailReportTitle">Reporte N° 4587</div>
+          <button type="button" class="topbar-mini-btn" id="btnDetailOpenAsset">Equipo</button>
+        </div>
+
+        <div id="detailReportContainer"></div>
+      </section>
+
+      <!-- ====================================================================
+           PANTALLA 8: HISTORIAL DE EQUIPOS
+           ==================================================================== -->
+      <section id="screen-historial-equipos" class="screen">
+        <div class="screen-topbar">
+          <button type="button" class="back-btn" id="btnBackFromHistorial" aria-label="Volver">←</button>
+          <div class="screen-topbar-title">Historial de equipos</div>
+          <button type="button" class="topbar-mini-btn" id="btnQuickScanFromHistory">QR</button>
+        </div>
+
+        <div class="form-field">
+          <input type="search" id="assetSearchInput" class="metro-input" placeholder="Buscar equipo, estación o N° serie..." />
+        </div>
+
+        <div id="assetsListContainer"></div>
+      </section>
+
+      <!-- ====================================================================
+           PANTALLA 9: DETALLE EQUIPO (EQUIPO A-03: VIDA ÚTIL, REINCIDENCIAS, TIMELINE)
+           ==================================================================== -->
+      <section id="screen-equipo-detalle" class="screen">
+        <div class="screen-topbar">
+          <button type="button" class="back-btn" id="btnBackFromEquipoDetalle" aria-label="Volver">←</button>
+          <div class="screen-topbar-title" id="assetDetailTopTitle">Equipo A-03</div>
+          <div class="topbar-spacer"></div>
+        </div>
+
+        <div class="segmented-control" role="tablist" aria-label="Vista del equipo">
+          <button type="button" id="segAssetHistorial" class="seg-btn active" role="tab" aria-selected="true">Historial</button>
+          <button type="button" id="segAssetManual" class="seg-btn" role="tab" aria-selected="false">Manual técnico</button>
+        </div>
+
+        <div id="assetDetailBody"></div>
+      </section>
+
+      <!-- ====================================================================
+           PANTALLA 10: MINI MANUAL TÉCNICO / GUÍA DE FALLAS COMUNES
+           ==================================================================== -->
+      <section id="screen-manual-tecnico" class="screen">
+        <div class="screen-topbar">
+          <button type="button" class="back-btn" id="btnBackFromManual" aria-label="Volver">←</button>
+          <div class="screen-topbar-title">Manual técnico</div>
+          <div class="topbar-spacer"></div>
+        </div>
+
+        <div class="form-field">
+          <input type="search" id="manualSearchInput" class="metro-input" placeholder="Buscar falla, código SP-102, sensor..." />
+        </div>
+
+        <div class="filter-pills-row" id="manualFilterPills">
+          <button type="button" class="filter-pill active" data-manual-cat="all">Todos</button>
+          <button type="button" class="filter-pill" data-manual-cat="Ascensor">Ascensores</button>
+          <button type="button" class="filter-pill" data-manual-cat="Escalera mecánica">Escaleras</button>
+          <button type="button" class="filter-pill" data-manual-cat="Torniquete / Peaje BIP">Torniquetes</button>
+          <button type="button" class="filter-pill" data-manual-cat="Protocolo Seguridad">Seguridad</button>
+        </div>
+
+        <div id="manualListContainer"></div>
+      </section>
+
+      <!-- ====================================================================
+           PANTALLA 11: INVENTARIO DE PIEZAS EN TIEMPO REAL
+           ==================================================================== -->
+      <section id="screen-inventario" class="screen">
+        <div class="screen-topbar">
+          <button type="button" class="back-btn" id="btnBackFromInventario" aria-label="Volver">←</button>
+          <div class="screen-topbar-title">Inventario de piezas</div>
+          <div class="topbar-spacer"></div>
+        </div>
+
+        <div class="form-field">
+          <input type="search" id="inventorySearchInput" class="metro-input" placeholder="Buscar repuesto o código (ej: SP-102)..." />
+        </div>
+
+        <div class="filter-pills-row">
+          <button type="button" class="filter-pill active" data-inv-filter="all">Todos</button>
+          <button type="button" class="filter-pill" data-inv-filter="low">Stock bajo</button>
+        </div>
+
+        <div id="inventoryListContainer"></div>
+      </section>
+
+      <!-- ====================================================================
+           PANTALLA 12: CHAT CON METRO
+           ==================================================================== -->
+      <section id="screen-chat" class="screen">
+        <div class="chat-screen-layout">
+          <div class="screen-topbar" style="margin-bottom:8px;">
+            <button type="button" class="back-btn" id="btnBackFromChat" aria-label="Volver">←</button>
+            <div class="screen-topbar-title">Chat con Metro</div>
+            <button type="button" class="back-btn" id="btnResetChat" style="justify-content:flex-end; font-size:15px;" title="Reiniciar chat">🔄</button>
+          </div>
+
+          <div class="preset-chips-scroll" id="presetChipsList">
+            <button type="button" class="preset-q-chip" data-q="¿Qué datos debo mencionar en el audio para que Metro valide rápido?">🎙️ ¿Qué decir en el audio?</button>
+            <button type="button" class="preset-q-chip" data-q="¿Hay stock de Sensor de puerta SP-102 o Fuente FP-24 en bodega?">📦 Consultar stock real</button>
+            <button type="button" class="preset-q-chip" data-q="Encontré humedad o filtración en el foso del equipo, ¿cuál es el protocolo?">💧 Protocolo filtración</button>
+            <button type="button" class="preset-q-chip" data-q="Resúmeme el estado de los reportes actuales.">📄 Estado de reportes</button>
+          </div>
+
+          <div class="chat-feed-box" id="chatMessagesFeed"></div>
+
+          <form class="chat-composer" id="chatForm">
+            <input
+              type="text"
+              id="chatInputField"
+              class="metro-input"
+              placeholder="Escribe tu duda o comentario a Metro..."
+              autocomplete="off"
+              style="padding:10px 12px; font-size:14px;"
+            />
+            <button type="submit" class="btn-metro btn-metro-red" style="width:auto; min-height:42px; padding:0 15px; font-size:14px;">
+              Enviar
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           PANTALLA 13: AVISOS DE METRO
+           ==================================================================== -->
+      <section id="screen-avisos" class="screen">
+        <div class="screen-topbar">
+          <button type="button" class="back-btn" id="btnBackFromAvisos" aria-label="Volver">←</button>
+          <div class="screen-topbar-title">Avisos de Metro</div>
+          <div class="topbar-spacer"></div>
+        </div>
+
+        <div class="ai-banner-pill">
+          <span>🔔</span>
+          <span>Prioridades operativas y objetivos de Metro</span>
+        </div>
+
+        <div id="avisosListContainer"></div>
+      </section>
+
+      <!-- ====================================================================
+           PANTALLA 14: PERFIL, SESIÓN SUPABASE, OFFLINE SYNC Y TESTEO
+           ==================================================================== -->
+      <section id="screen-perfil" class="screen">
+        <div class="screen-topbar">
+          <button type="button" class="back-btn" id="btnBackFromPerfil" aria-label="Volver">←</button>
+          <div class="screen-topbar-title">Perfil y Configuración</div>
+          <div class="topbar-spacer"></div>
+        </div>
+
+        <!-- Usuario autenticado -->
+        <div class="report-summary-card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+            <div>
+              <div style="font-size:16px; font-weight:800;" id="profileFullName">Usuario Metro-ON</div>
+              <div style="font-size:12.5px; color:var(--text-secondary);" id="profileEmail">correo@ejemplo.cl</div>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:2px;" id="profileCompany">Contratista Externo</div>
+            </div>
+            <span class="count-pill" id="profileRoleBadge">Contratista</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px;">
+            <button type="button" class="btn-metro btn-metro-red" id="btnSelectRoleContratista" style="min-height:40px; font-size:13px;">
+              👷 Contratista
+            </button>
+            <button type="button" class="btn-metro btn-metro-white" id="btnSelectRoleMetro" style="min-height:40px; font-size:13px;">
+              🚇 Supervisor Metro
+            </button>
+          </div>
+        </div>
+
+        <!-- Estado de sincronización offline + Supabase -->
+        <div class="report-summary-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <div style="font-size:14px; font-weight:800;">📡 Sincronización y Modo Offline</div>
+            <span class="count-pill" id="profileQueueCountPill">0 pendientes</span>
+          </div>
+          <div style="font-size:12.5px; color:var(--text-secondary); margin-bottom:10px;" id="profileSyncStateDesc">
+            Conectado a Supabase. Los reportes guardados bajo tierra se sincronizan automáticamente al recuperar señal.
+          </div>
+          <button type="button" class="btn-metro btn-metro-white" id="btnProfileSyncNow" style="min-height:40px; font-size:13.5px;">
+            🔄 Sincronizar cola offline ahora
+          </button>
+        </div>
+
+        <!-- Cronómetro Pauta de Testeo (< 5 min) -->
+        <div class="report-summary-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div style="font-size:14px; font-weight:800;">🧪 Cronómetro Pauta de Testeo (&lt; 5 min)</div>
+            <span class="count-pill" id="testTimerDisplay">00:00</span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn-metro btn-metro-red" id="btnStartStopTestTimer" style="min-height:38px; font-size:13px;">
+              ▶️ Iniciar
+            </button>
+            <button type="button" class="btn-metro btn-metro-white" id="btnResetTestTimer" style="min-height:38px; font-size:13px;">
+              Reiniciar
+            </button>
+          </div>
+        </div>
+
+        <!-- Instalar PWA -->
+        <div class="report-summary-card">
+          <div style="font-size:14px; font-weight:800; margin-bottom:6px;">📲 Instalar App PWA</div>
+          <div style="font-size:12.5px; color:var(--text-secondary); line-height:1.45; margin-bottom:10px;">
+            En iPhone (Safari): toca <strong>Compartir</strong> (⬆️) → <strong>«Agregar a inicio»</strong>. En Android/Chrome usa el botón de instalación directa.
+          </div>
+          <button type="button" class="btn-metro btn-metro-white" id="btnInstallPwa" hidden style="min-height:40px; font-size:13.5px;">
+            ⬇️ Instalar Metro-ON en este dispositivo
+          </button>
+        </div>
+
+        <button type="button" class="btn-metro btn-metro-dark" id="btnSignOut">
+          Cerrar sesión
+        </button>
+      </section>
+
+    </main>
+
+    <!-- ======================================================================
+         BARRA INFERIOR DE 5 PESTAÑAS (Inicio | Reportes | Manual | Chat | Perfil)
+         ====================================================================== -->
+    <nav id="bottomTabbar" class="bottom-tabbar hidden" aria-label="Navegación principal">
+      <button type="button" class="tabbar-item active" data-nav="screen-inicio" id="tabInicio">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+        <span>Inicio</span>
+      </button>
+
+      <button type="button" class="tabbar-item" data-nav="screen-mis-reportes" id="tabReportes">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="8" y1="13" x2="16" y2="13"/>
+          <line x1="8" y1="17" x2="14" y2="17"/>
+        </svg>
+        <span>Reportes</span>
+        <span class="tabbar-badge" id="tabReportesBadge">1</span>
+      </button>
+
+      <button type="button" class="tabbar-item" data-nav="screen-manual-tecnico" id="tabManual">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
+        <span>Manual</span>
+      </button>
+
+      <button type="button" class="tabbar-item" data-nav="screen-chat" id="tabChat">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        </svg>
+        <span>Chat</span>
+      </button>
+
+      <button type="button" class="tabbar-item" data-nav="screen-perfil" id="tabPerfil">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>Perfil</span>
+      </button>
+    </nav>
+
+    <!-- ======================================================================
+         MODALES NATIVOS <dialog closedby="any">
+         ====================================================================== -->
+    <!-- 1. Adjuntar fotografías Antes y Después -->
+    <dialog id="dialogPhotos" class="metro-dialog" closedby="any" aria-labelledby="dialogPhotosTitle">
+      <div class="modal-header-row">
+        <h1 id="dialogPhotosTitle" class="modal-title-h1">🖼️ Fotografías Antes y Después</h1>
+        <form method="dialog">
+          <button type="submit" class="filter-pill">Cerrar</button>
+        </form>
+      </div>
+      <p style="font-size:13px; color:var(--text-secondary); margin-bottom:10px;">
+        Toca cada recuadro para tomar o subir fotos desde tu teléfono, o usa las fotos oficiales del equipo:
+      </p>
+      <div class="before-after-grid" style="margin-bottom:12px;">
+        <label class="ba-card" style="cursor:pointer;">
+          <input type="file" id="fileInputBefore" accept="image/*" capture="environment" hidden />
+          <div class="ba-img-wrap">
+            <img id="modalImgBefore" alt="Foto Antes" />
+          </div>
+          <div class="ba-caption">📸 Cambiar Antes</div>
+        </label>
+        <label class="ba-card" style="cursor:pointer;">
+          <input type="file" id="fileInputAfter" accept="image/*" capture="environment" hidden />
+          <div class="ba-img-wrap">
+            <img id="modalImgAfter" alt="Foto Después" />
+          </div>
+          <div class="ba-caption">📸 Cambiar Después</div>
+        </label>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn-metro btn-metro-white" id="btnRegenerateDemoPhotos" style="font-size:13px;">
+          🔄 Fotos del entregable
+        </button>
+        <button type="button" class="btn-metro btn-metro-red" id="btnConfirmPhotosModal" style="font-size:13px;">
+          Confirmar fotos
+        </button>
+      </div>
+    </dialog>
+
+    <!-- 2. Escáner de código QR -->
+    <dialog id="dialogQrScanner" class="metro-dialog" closedby="any" aria-labelledby="dialogQrTitle">
+      <div class="modal-header-row">
+        <h1 id="dialogQrTitle" class="modal-title-h1">📷 Escanear código QR</h1>
+        <form method="dialog">
+          <button type="submit" class="filter-pill">Cerrar</button>
+        </form>
+      </div>
+      <div class="scanner-video-box">
+        <video id="qrCameraVideo" playsinline muted></video>
+        <div class="scanner-reticle"></div>
+        <span id="qrCameraStatusMsg" style="position:absolute; bottom:10px; font-size:11.5px; background:rgba(0,0,0,0.72); padding:4px 10px; border-radius:999px;">
+          Apunta al código QR del equipo
+        </span>
+      </div>
+      <div style="font-size:12.5px; font-weight:700; color:var(--text-secondary);">O selecciona un código QR para probar al instante:</div>
+      <div id="qrQuickPickList" class="quick-pick-list"></div>
+    </dialog>
+
+    <!-- 3. Fotografiar N° de serie + OCR -->
+    <dialog id="dialogSerialCapture" class="metro-dialog" closedby="any" aria-labelledby="dialogSerialTitle">
+      <div class="modal-header-row">
+        <h1 id="dialogSerialTitle" class="modal-title-h1">🏷️ Capturar N° de serie</h1>
+        <form method="dialog">
+          <button type="submit" class="filter-pill">Cerrar</button>
+        </form>
+      </div>
+      <label class="btn-metro btn-metro-red" style="margin-bottom:12px;">
+        <input type="file" id="fileInputSerialPlate" accept="image/*" capture="environment" hidden />
+        📸 Tomar foto a placa metálica
+      </label>
+      <div class="form-field">
+        <label class="field-label" for="inputManualSerial">O ingresa N° de serie / código</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="inputManualSerial" class="metro-input" placeholder="Ej: SN-2020-A03-L1" />
+          <button type="button" id="btnMatchSerialCode" class="btn-metro btn-metro-dark" style="width:auto; padding:0 14px;">Buscar</button>
+        </div>
+      </div>
+      <div style="font-size:12px; font-weight:700; color:var(--text-secondary);">Placas registradas:</div>
+      <div id="serialQuickPickList" class="quick-pick-list"></div>
+    </dialog>
+
+    <!-- 4. Lightbox de fotografías [⤢] -->
+    <dialog id="dialogLightbox" class="metro-dialog lightbox-dialog" closedby="any" aria-labelledby="dialogLightboxTitle">
+      <div class="modal-header-row">
+        <h1 id="dialogLightboxTitle" class="modal-title-h1" style="color:#FFFFFF;">Fotografía</h1>
+        <form method="dialog">
+          <button type="submit" class="filter-pill">Cerrar</button>
+        </form>
+      </div>
+      <img id="lightboxImg" alt="Vista ampliada" style="width:100%; border-radius:12px; display:block; max-height:70dvh; object-fit:contain;" />
+    </dialog>
+
+    <!-- 5. Manual técnico rápido desde Nuevo Reporte -->
+    <dialog id="dialogManualQuick" class="metro-dialog" closedby="any" aria-labelledby="dialogManualQuickTitle">
+      <div class="modal-header-row">
+        <h1 id="dialogManualQuickTitle" class="modal-title-h1">📖 Guía rápida de fallas</h1>
+        <form method="dialog">
+          <button type="submit" class="filter-pill">Cerrar</button>
+        </form>
+      </div>
+      <div id="dialogManualQuickBody"></div>
+    </dialog>
+
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
